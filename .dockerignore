@@ -1,0 +1,4 @@
+*
+!config.prod.json
+!vendor/
+!main.go
