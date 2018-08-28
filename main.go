@@ -5,22 +5,25 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 
-	"github.com/stretchr/gomniauth"
-	"github.com/stretchr/gomniauth/oauth2"
-	"github.com/stretchr/gomniauth/providers/github"
-	"github.com/stretchr/objx"
-	"github.com/stretchr/signature"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 )
 
 // Config defines the sub config object
 type Config struct {
-	APIURL         string `json:"apiUrl"`
 	RedirectURL    string `json:"redirectUrl"`
 	ClientID       string `json:"clientId"`
 	ClientSecretID string `json:"clientSecretId"`
+}
+
+var keyMap map[string]string
+
+func init() {
+	keyMap = make(map[string]string)
 }
 
 func main() {
@@ -38,15 +41,6 @@ func main() {
 
 	configEntries := readConfig(isProd)
 
-	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			respondErr(w, r, http.StatusBadRequest, r.Method, " is not allowed")
-			return
-		}
-
-		respond(w, r, http.StatusOK, fmt.Sprintf("Request to %s OK", r.RequestURI))
-	})
-
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			respondErr(w, r, http.StatusBadRequest, r.Method, " is not allowed")
@@ -59,48 +53,41 @@ func main() {
 			return
 		}
 
-		config, err := getConfigByClientID(configEntries, clientID)
+		oauthConf, err := createOauthConf(&configEntries, clientID)
 		if err != nil {
 			respondErr(w, r, http.StatusBadRequest, err)
 			return
 		}
 
-		setupGomniauth(config)
+		randomKey := randomString(20)
+		keyMap[randomKey] = clientID
 
-		providerName := "github"
-		provider, err := gomniauth.Provider(providerName)
-
-		if err != nil {
-			log.Fatalln("Error trying to get provider", providerName)
-		}
-
-		loginURL, err := provider.GetBeginAuthURL(nil, objx.MSI(oauth2.OAuth2KeyScope, "public_repo"))
-
-		if err != nil {
-			log.Fatalln("Error trying to GetBeginAuthURL", providerName, "-", err)
-		}
-
-		w.Header().Set("Location", loginURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+		url := oauthConf.AuthCodeURL(randomKey)
+		log.Printf("Redirect to %s", url)
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	})
 
 	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
-		providerName := "github"
-		provider, err := gomniauth.Provider(providerName)
+		code := r.FormValue("code")
+		randomKey := r.FormValue("state")
+
+		clientID, exists := keyMap[randomKey]
+		if !exists {
+			respondErr(w, r, http.StatusBadRequest, "Validation of state failed")
+			return
+		}
+		delete(keyMap, randomKey)
+
+		config, _ := getConfigByClientID(&configEntries, clientID)
+		oauthConf, _ := createOauthConf(&configEntries, clientID)
+
+		token, err := oauthConf.Exchange(oauth2.NoContext, code)
 		if err != nil {
-			log.Fatalln("Error when trying to get provider", providerName, "-", err)
+			respondErr(w, r, http.StatusNotAcceptable)
+			return
 		}
 
-		// get the credentials
-		creds, err := provider.CompleteAuth(objx.MustFromURLQuery(r.URL.RawQuery))
-		if err != nil {
-			log.Fatalln("Error when trying to complete auth for", providerName, "-", err)
-		}
-
-		clientID := r.URL.Query().Get("clientId")
-		config, _ := getConfigByClientID(configEntries, clientID)
-
-		redirectURLWithToken := config.RedirectURL + "?token=" + creds.Get("access_token").String()
+		redirectURLWithToken := fmt.Sprintf("%s?token=%s", config.RedirectURL, token.AccessToken)
 
 		w.Header().Set("Location", redirectURLWithToken)
 		w.WriteHeader(http.StatusTemporaryRedirect)
@@ -110,17 +97,22 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func setupGomniauth(config Config) {
-	gomniauth.SetSecurityKey(signature.RandomKey(64))
+func createOauthConf(configEntries *[]Config, clientID string) (*oauth2.Config, error) {
+	config, err := getConfigByClientID(configEntries, clientID)
+	if err != nil {
+		return nil, err
+	}
 
-	callbackURL := fmt.Sprintf("%s/auth/callback?clientId=%s", config.APIURL, config.ClientID)
-	clientID := config.ClientID
-	clientSecret := config.ClientSecretID
-	gomniauth.WithProviders(github.New(clientID, clientSecret, callbackURL))
+	return &oauth2.Config{
+		ClientID:     config.ClientID,
+		ClientSecret: config.ClientSecretID,
+		Scopes:       []string{"public_repo"},
+		Endpoint:     github.Endpoint,
+	}, nil
 }
 
-func getConfigByClientID(configEntries []Config, clientID string) (Config, error) {
-	for _, config := range configEntries {
+func getConfigByClientID(configEntries *[]Config, clientID string) (Config, error) {
+	for _, config := range *configEntries {
 		if config.ClientID == clientID {
 			return config, nil
 		}
@@ -172,4 +164,14 @@ func respondErr(w http.ResponseWriter, r *http.Request, status int, args ...inte
 			"message": fmt.Sprint(args...),
 		},
 	})
+}
+
+func randomString(keyLength int) string {
+	letter := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	b := make([]rune, keyLength)
+	for i := range b {
+		b[i] = letter[rand.Intn(len(letter))]
+	}
+	return string(b)
 }

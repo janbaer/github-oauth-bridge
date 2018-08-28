@@ -24,19 +24,10 @@
 #   go-tests = true
 #   unused-packages = true
 
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/stretchr/gomniauth"
-
-[[constraint]]
-  name = "github.com/stretchr/objx"
-  version = "0.1.1"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/stretchr/signature"
-
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
