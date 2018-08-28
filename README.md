@@ -9,7 +9,7 @@ is a Post request and it's not supporting CORS which makes it impossible to send
 webclient.
 
 The webapi needs a configuration file which contains all necessary configuration values that are
-required to process the oauth login. Since they also have to contin the **secret** id, the config file
+required to process the oauth login. Since they also have to contain the **secret** id, the config file
 is not part of this Git repository.
 
 But here's a sample config file:
@@ -17,7 +17,6 @@ But here's a sample config file:
 ```
 [
   {
-    "apiUrl": "http://localhost:8080",
     "redirectUrl": "http://localhost:3000/#/login",
     "clientId": "12345",
     "clientSecretId": "23424fhsdfsd014141"
