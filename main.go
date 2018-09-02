@@ -43,19 +43,19 @@ func main() {
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			respondErr(w, r, http.StatusBadRequest, r.Method, " is not allowed")
+			http.Error(w, fmt.Sprintf("The %s methos is not allowed", r.Method), http.StatusBadRequest)
 			return
 		}
 
 		clientID := r.URL.Query().Get("clientId")
 		if len(clientID) == 0 {
-			respondErr(w, r, http.StatusBadRequest, "The query parameter clientId is required")
+			http.Error(w, "The query parameter clientId is required", http.StatusBadRequest)
 			return
 		}
 
 		oauthConf, err := createOauthConf(&configEntries, clientID)
 		if err != nil {
-			respondErr(w, r, http.StatusBadRequest, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -73,7 +73,7 @@ func main() {
 
 		clientID, exists := keyMap[randomKey]
 		if !exists {
-			respondErr(w, r, http.StatusBadRequest, "Validation of state failed")
+			http.Error(w, "Validation of state failed", http.StatusBadRequest)
 			return
 		}
 		delete(keyMap, randomKey)
@@ -83,7 +83,7 @@ func main() {
 
 		token, err := oauthConf.Exchange(oauth2.NoContext, code)
 		if err != nil {
-			respondErr(w, r, http.StatusNotAcceptable)
+			http.Error(w, "Code was not accepted by the Oauth provider", http.StatusBadRequest)
 			return
 		}
 
@@ -156,14 +156,6 @@ func respond(w http.ResponseWriter, r *http.Request, status int, data interface{
 	if data != nil {
 		encodeBody(w, r, data)
 	}
-}
-
-func respondErr(w http.ResponseWriter, r *http.Request, status int, args ...interface{}) {
-	respond(w, r, status, map[string]interface{}{
-		"error": map[string]interface{}{
-			"message": fmt.Sprint(args...),
-		},
-	})
 }
 
 func randomString(keyLength int) string {
