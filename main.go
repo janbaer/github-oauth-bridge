@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,9 +22,24 @@ type Config struct {
 }
 
 var keyMap map[string]string
+var isProd = false
+var configEntries []Config
+
+// Oauth2Handler - defines the interface to get the token from the OauthProvider
+type Oauth2Handler interface {
+	Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error)
+	AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string
+}
 
 func init() {
 	keyMap = make(map[string]string)
+
+	if os.Getenv("ENV") == "PROD" {
+		isProd = true
+		log.Println("Server is running on Production environment...")
+	}
+
+	configEntries = readConfig(isProd)
 }
 
 func main() {
@@ -32,16 +48,27 @@ func main() {
 		port = "8080"
 	}
 
-	isProd := false
+	mux := newRouter()
 
-	if os.Getenv("ENV") == "PROD" {
-		isProd = true
-		log.Println("Reading the configuration for PROD")
+	log.Println("Listening for requests on port: " + port)
+	log.Fatal(http.ListenAndServe(":"+port, mux))
+}
+
+func newRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	auth2HandlerFunc := func(clientID string) (Oauth2Handler, error) {
+		return createOauthConf(&configEntries, clientID)
 	}
 
-	configEntries := readConfig(isProd)
+	mux.Handle("/login", handleLogin(keyMap, auth2HandlerFunc))
+	mux.Handle("/auth/callback", handleAuthCallback(keyMap, auth2HandlerFunc))
 
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+	return mux
+}
+
+func handleLogin(keys map[string]string, oauth2HandlerFunc func(clientID string) (Oauth2Handler, error)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, fmt.Sprintf("The %s methos is not allowed", r.Method), http.StatusBadRequest)
 			return
@@ -53,33 +80,35 @@ func main() {
 			return
 		}
 
-		oauthConf, err := createOauthConf(&configEntries, clientID)
+		oauthConf, err := oauth2HandlerFunc(clientID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		randomKey := randomString(20)
-		keyMap[randomKey] = clientID
+		keys[randomKey] = clientID
 
 		url := oauthConf.AuthCodeURL(randomKey)
 		log.Printf("Redirect to %s", url)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	})
+}
 
-	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
+func handleAuthCallback(keys map[string]string, oauth2HandlerFunc func(clientID string) (Oauth2Handler, error)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		code := r.FormValue("code")
 		randomKey := r.FormValue("state")
 
-		clientID, exists := keyMap[randomKey]
+		clientID, exists := keys[randomKey]
 		if !exists {
 			http.Error(w, "Validation of state failed", http.StatusBadRequest)
 			return
 		}
-		delete(keyMap, randomKey)
+		delete(keys, randomKey)
 
 		config, _ := getConfigByClientID(&configEntries, clientID)
-		oauthConf, _ := createOauthConf(&configEntries, clientID)
+		oauthConf, _ := oauth2HandlerFunc(clientID)
 
 		token, err := oauthConf.Exchange(oauth2.NoContext, code)
 		if err != nil {
@@ -92,12 +121,9 @@ func main() {
 		w.Header().Set("Location", redirectURLWithToken)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	})
-
-	log.Println("Listening for requests on port: " + port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func createOauthConf(configEntries *[]Config, clientID string) (*oauth2.Config, error) {
+func createOauthConf(configEntries *[]Config, clientID string) (Oauth2Handler, error) {
 	config, err := getConfigByClientID(configEntries, clientID)
 	if err != nil {
 		return nil, err
