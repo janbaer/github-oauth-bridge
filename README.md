@@ -1,6 +1,6 @@
 # GitHub Oauth2 bridge api
 
-https://travis-ci.com/janbaer/github-oauth-bridge.svg?branch=master
+![Travis build state](https://travis-ci.com/janbaer/github-oauth-bridge.svg?branch=master)
 
 This Project contains my source code for my bridge to the Github Oauth. The reason why I wrote this
 project is, that using the Github Oauth process is not possible from a web client.
