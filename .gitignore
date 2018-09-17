@@ -1,3 +1,5 @@
 config.prod.json
 config.dev.json
 debug
+github-oauth-bridge
+Session.vim
