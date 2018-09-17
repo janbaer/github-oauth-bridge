@@ -1,5 +1,5 @@
 test:
-	@go test -cover ./...
+	@go test -v -cover ./...
 .PHONY: test
 
 install:
@@ -7,9 +7,9 @@ install:
 	@dep ensure
 .PHONY: install
 
-size:
-	@curl -sL https://gist.githubusercontent.com/tj/04e0965e23da00ca33f101e5b2ed4ed4/raw/9aa16698b2bc606cf911219ea540972edef05c4b/gistfile1.txt | bash
-.PHONY: size
+run:
+	@go run main.go
+.PHONY: run
 
 deploy:
 	@now && now alias
