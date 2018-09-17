@@ -1,1 +1,0 @@
-now && now alias
