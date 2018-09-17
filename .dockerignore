@@ -1,4 +1,8 @@
 *
 !config.prod.json
+!config/
+!github
+!handlers
+!utils
 !vendor/
 !main.go
