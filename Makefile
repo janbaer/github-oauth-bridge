@@ -3,8 +3,7 @@ test:
 .PHONY: test
 
 install:
-	@go get -d -u github.com/golang/dep
-	@dep ensure
+	@go mod download
 .PHONY: install
 
 run:
