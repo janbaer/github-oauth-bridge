@@ -31,7 +31,7 @@ func createOauth2Config(clientID string, clientSecretID string) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecretID,
-		Scopes:       []string{"public_repo"},
+		Scopes:       []string{"repo"},
 		Endpoint:     github.Endpoint,
 	}
 }
