@@ -3,3 +3,4 @@ config.dev.json
 debug
 github-oauth-bridge
 Session.vim
+.now

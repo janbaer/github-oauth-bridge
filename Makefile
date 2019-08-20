@@ -3,6 +3,7 @@ test:
 .PHONY: test
 
 install:
+	@npm install -g now
 	@go mod download
 .PHONY: install
 
@@ -15,6 +16,6 @@ build:
 .PHONY: build
 
 deploy:
-	@now && now alias
+	@now --target production -e ENV=PROD
 .PHONY: deploy
 

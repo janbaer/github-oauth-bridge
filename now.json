@@ -1,17 +1,10 @@
 
 {
-  "type": "docker",
-  "public": true,
-  "features": {
-    "cloud": "v2"
-  },
+  "name": "github-oauth-bridge",
+  "version": 2,
+  "alias": "github-oauth-bridge.jan-baer.now.sh",
+  "public": false,
   "env": {
     "ENV": "PROD"
-  },
-  "alias": [
-    "github-oauth-bridge"
-  ],
-  "static": {
-    "directoryListing": false
   }
 }

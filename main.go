@@ -56,6 +56,9 @@ func newRouter() *http.ServeMux {
 
 	mux.Handle("/login", handlers.HandleLogin(&configEntries, keyMap, oauthGithub.AuthCodeURL))
 	mux.Handle("/auth/callback", handlers.HandleAuthCallback(&configEntries, keyMap, oauthGithub.Exchange))
+	mux.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	return mux
 }

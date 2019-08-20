@@ -1,8 +1,0 @@
-*
-!config.prod.json
-!config/
-!github/
-!handlers/
-!utils/
-!main.go
-!go.*
