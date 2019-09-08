@@ -1,10 +1,9 @@
 package config
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"log"
+	"fmt"
 	"os"
+	"strings"
 )
 
 // Config defines the sub config object
@@ -14,23 +13,29 @@ type Config struct {
 	ClientSecretID string `json:"clientSecretId"`
 }
 
-// ReadConfig reads the config from the given config file
-func ReadConfig(configFile string) []Config {
-	_, err := os.Stat(configFile)
-	if err != nil {
-		log.Fatalf("Configurationfile %s not found", configFile)
+// ReadConfigFromEnv - Reads the config for the given clientID from the Environment variable
+func ReadConfigFromEnv(clientID string) (Config, error) {
+	var config Config
+
+	configValue := os.Getenv(fmt.Sprintf("CLIENT_%s", clientID))
+	if len(configValue) == 0 {
+		return config, fmt.Errorf("No configuration for clientID %s found", clientID)
 	}
 
-	content, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		log.Fatalf("Configurationfile %s could not be read", configFile)
-	}
+	config = parseConfig(clientID, configValue)
+	return config, nil
+}
 
-	var configEntries []Config
-	err = json.Unmarshal(content, &configEntries)
-	if err != nil {
-		log.Fatalf("Configurationfile %s could not be parsed to the expected json structure", configFile)
-	}
+func parseConfig(clientID string, configValue string) Config {
+	var clientSecretID string
+	var redirectURL string
 
-	return configEntries
+	values := strings.Split(configValue, "|")
+	clientSecretID, redirectURL = values[0], values[1]
+
+	return Config{
+		ClientID:       clientID,
+		ClientSecretID: clientSecretID,
+		RedirectURL:    redirectURL,
+	}
 }
