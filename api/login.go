@@ -2,27 +2,14 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/janbaer/github-oauth-bridge/config"
+	"github.com/janbaer/github-oauth-bridge/github"
+	"github.com/janbaer/github-oauth-bridge/state"
 )
-
-var keyMap map[string]string
-var configEntries []config.Config
-
-func init() {
-	configFile := "./../config.prod.json"
-	if os.Getenv("ENV") == "DEV" {
-		configFile = "./config.dev.json"
-	}
-
-	dir, _ := os.Getwd()
-	fmt.Printf("Working in %s", dir)
-
-	configEntries = config.ReadConfig(configFile)
-	fmt.Printf("Reading %d configEntries", len(configEntries))
-}
 
 // Login - Handles the login request
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -37,5 +24,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Hello from loginHandler with clientId %s", clientID)
+	configValue, err := config.ReadConfigFromEnv(clientID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	state := state.EncryptState(clientID, os.Getenv("SECRET"))
+
+	url := github.AuthCodeURL(configValue.ClientID, configValue.ClientSecretID, state)
+
+	log.Printf("Redirect to %s", url)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }

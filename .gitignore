@@ -3,4 +3,7 @@ config.dev.json
 debug
 github-oauth-bridge
 Session.vim
-.now
+.now/
+.env.prod
+.env
+now.prod.json
