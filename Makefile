@@ -15,8 +15,3 @@ install:
 run-dev:
 	@go run main.go
 .PHONY: run-dev
-
-deploy:
-	@now deploy --prod --local-config=now.prod.json --no-clipboard
-.PHONY: deploy
-
