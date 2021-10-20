@@ -13,11 +13,10 @@ install:
 .PHONY: install
 
 run-dev:
-	@cp -f .env.dev .env
-	@now dev --listen 4002
+	@go run main.go
 .PHONY: run-dev
 
 deploy:
-	@now deploy --name=github-oauth-bridge --prod --local-config=now.prod.json --no-clipboard
+	@now deploy --prod --local-config=now.prod.json --no-clipboard
 .PHONY: deploy
 
