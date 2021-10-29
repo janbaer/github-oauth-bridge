@@ -32,7 +32,7 @@ func AuthCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := github.Exchange(configValue.ClientID, configValue.ClientSecretID, code)
 	if err != nil {
 		log.Printf("Error while exchange code %s for client %s with Github: %v", code, configValue.ClientID, err)
-		http.Error(w, "Code was not accepted by the Oauth provider", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Code %s for client %s was not accepted by the Oauth provider", code, configValue.ClientID), http.StatusBadRequest)
 		return
 	}
 
