@@ -20,7 +20,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	clientID := r.URL.Query().Get("clientId")
 	if len(clientID) == 0 {
-		http.Error(w, "The query parameter clientId is required", http.StatusBadRequest)
+		http.Error(w, "The query parameter clientId is required!", http.StatusBadRequest)
 		return
 	}
 
