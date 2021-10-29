@@ -33,6 +33,8 @@ func parseConfig(clientID string, configValue string) Config {
 	values := strings.Split(configValue, "|")
 	clientSecretID, redirectURL = values[0], values[1]
 
+	fmt.Println("RedirectURL", configValue)
+
 	return Config{
 		ClientID:       clientID,
 		ClientSecretID: clientSecretID,

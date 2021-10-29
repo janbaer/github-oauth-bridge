@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -23,12 +24,14 @@ func AuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	configValue, err := config.ReadConfigFromEnv(clientID)
 	if err != nil {
+		log.Printf("Error while verifying state: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	token, err := github.Exchange(configValue.ClientID, configValue.ClientSecretID, code)
 	if err != nil {
+		log.Printf("Error while exchange code %s for client %s with Github: %v", code, configValue.ClientID, err)
 		http.Error(w, "Code was not accepted by the Oauth provider", http.StatusBadRequest)
 		return
 	}

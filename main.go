@@ -14,8 +14,8 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/authCallback", api.AuthCallback)
-	mux.HandleFunc("/login", api.Login)
+	mux.HandleFunc("/api/auth-callback", api.AuthCallback)
+	mux.HandleFunc("/api/login", api.Login)
 
 	fmt.Println("Running github-oauth-bridge on port 9001...")
 
