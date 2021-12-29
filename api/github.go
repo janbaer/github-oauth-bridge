@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -9,7 +10,7 @@ import (
 )
 
 func Handle(w http.ResponseWriter, req *http.Request) {
-	fmt.Println(req.URL.Path)
+	log.Println(req.URL.Path)
 
 	setupResponse(&w, req)
 
@@ -19,7 +20,7 @@ func Handle(w http.ResponseWriter, req *http.Request) {
 
 	newPath := strings.Replace(req.URL.Path, "/api/github", "", -1)
 	url, _ := url.Parse(fmt.Sprintf("https://api.github.com/%s", newPath))
-	fmt.Printf("Redirect to %s\n", url)
+	log.Printf("Redirect to %s\n", url)
 
 	proxy := httputil.NewSingleHostReverseProxy(url)
 

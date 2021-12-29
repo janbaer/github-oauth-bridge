@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -33,7 +34,7 @@ func parseConfig(clientID string, configValue string) Config {
 	values := strings.Split(configValue, "|")
 	clientSecretID, redirectURL = values[0], values[1]
 
-	fmt.Println("RedirectURL", configValue)
+	log.Println("RedirectURL", configValue)
 
 	return Config{
 		ClientID:       clientID,

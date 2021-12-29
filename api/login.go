@@ -30,7 +30,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := state.EncryptState(clientID, os.Getenv("SECRET"))
+	secret := os.Getenv("SECRET")
+	state := state.EncryptState(clientID, secret)
 
 	url := github.AuthCodeURL(configValue.ClientID, configValue.ClientSecretID, state)
 
