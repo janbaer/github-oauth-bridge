@@ -1,6 +1,6 @@
 module github.com/janbaer/github-oauth-bridge
 
-go 1.17
+go 1.23
 
 require (
 	github.com/stretchr/testify v1.3.0
